@@ -1,25 +1,15 @@
-from itertools import permutations
-from collections import Counter
-
-# Исходное слово
-word = "АБРАКАДАБРА"
-
-# Подсчет количества каждой буквы
-letter_counts = Counter(word)
-
-# Функция для проверки, можно ли составить слово из заданных букв
-def is_valid_combination(combination, letter_counts):
-    combo_counts = Counter(combination)
-    for letter in combo_counts:
-        if combo_counts[letter] > letter_counts[letter]:
-            return False
-    return True
-
-# Генерация всех уникальных комбинаций из 5 букв
-unique_combinations = set()
-for combo in permutations(word, 5):
-    if is_valid_combination(combo, letter_counts):
-        unique_combinations.add(combo)
-
-# Вывод количества уникальных слов
-print(f"Количество различных слов из 5 букв: {len(unique_combinations)}")
+from math import factorial
+# Количество каждой буквы
+counts = {'A': 5, 'Б': 2, 'Р': 2, 'К': 1, 'Д': 1}
+total = 0
+# Перебираем все возможные комбинации
+for a in range(min(5, counts['A']) + 1):
+    for b in range(min(5 - a, counts['Б']) + 1):
+        for r in range(min(5 - a - b, counts['Р']) + 1):
+            for k in range(min(5 - a - b - r, counts['К']) + 1):
+                d = 5 - a - b - r - k
+                if d <= counts['Д']:
+                    # Вычисляем количество перестановок для текущей комбинации
+                    permutations = factorial(5) // (factorial(a) * factorial(b) * factorial(r) * factorial(k) * factorial(d))
+                    total += permutations
+print(total)
