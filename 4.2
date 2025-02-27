@@ -1,0 +1,39 @@
+import heapq
+from collections import defaultdict
+
+def build_huffman_tree(freq):
+    heap = [[weight, [char, ""]] for char, weight in freq.items()]
+    heapq.heapify(heap)
+    while len(heap) > 1:
+        lo = heapq.heappop(heap)
+        hi = heapq.heappop(heap)
+        for pair in lo[1:]:
+            pair[1] = '0' + pair[1]
+        for pair in hi[1:]:
+            pair[1] = '1' + pair[1]
+        heapq.heappush(heap, [lo[0] + hi[0]] + lo[1:] + hi[1:])
+    return heap[0][1:]
+
+def huffman_encode(data, codes):
+    encoded_data = ''.join(codes[char] for char in data)
+    return encoded_data
+
+def huffman_decode(encoded_data, codes):
+    reverse_codes = {v: k for k, v in codes.items()}
+    current_code = ""
+    decoded_data = []
+    for bit in encoded_data:
+        current_code += bit
+        if current_code in reverse_codes:
+            decoded_data.append(reverse_codes[current_code])
+            current_code = ""
+    return ''.join(decoded_data)
+
+# Example usage
+freq = {'A': 3, 'B': 5, 'C': 6, 'D': 7, 'E': 14, 'F': 30, 'G': 35}
+huffman_tree = build_huffman_tree(freq)
+codes = {char: code for char, code in huffman_tree}
+encoded_data = huffman_encode("ABCDEFG", codes)
+decoded_data = huffman_decode(encoded_data, codes)
+print("Encoded data:", encoded_data)
+print("Decoded data:", decoded_data)
