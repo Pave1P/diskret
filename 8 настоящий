@@ -1,0 +1,56 @@
+import networkx as nx
+import matplotlib.pyplot as plt
+import random
+
+# === Исходный граф из условия ===
+edges = [
+    ('S', '1', 5), ('S', '2', 7), ('S', '3', 3),
+    ('1', '2', 3), ('1', '4', 4), ('3', '2', 6),
+    ('3', '6', 5), ('2', '7', 9),
+     ('4', '2', 2),
+    ('4', '5', 7), ('5', '2', 6), ('5', '7', 5),
+    ('5', 'T', 7), ('5', '9', 5), ('9', 'T', 9),
+    ('7', '8', 4), ('6', '7', 3), ('6', '8', 3),
+    ('8', 'T', 9),('6', '2', 9)
+]
+
+def create_graph(edge_list):
+    G = nx.DiGraph()
+    for u, v, capacity in edge_list:
+        G.add_edge(u, v, capacity=capacity)
+    return G
+
+def compute_flow_and_cut(G, source='S', sink='T'):
+    flow_value, flow_dict = nx.maximum_flow(G, source, sink)
+    cut_value, partition = nx.minimum_cut(G, source, sink)
+    reachable, non_reachable = partition
+    return flow_value, cut_value, sorted(reachable), sorted(non_reachable), flow_dict
+
+def draw_graph(G, title):
+    pos = nx.spring_layout(G, seed=42)
+    edge_labels = {(u, v): f"{d['capacity']}" for u, v, d in G.edges(data=True)}
+    plt.figure(figsize=(10, 6))
+    nx.draw(G, pos, with_labels=True, node_color='skyblue', node_size=1500, font_size=12)
+    nx.draw_networkx_edge_labels(G, pos, edge_labels=edge_labels)
+    nx.draw_networkx_edges(G, pos, arrowstyle='->', arrowsize=15)
+    plt.title(title)
+    plt.show()
+
+# === Часть 1: исходный граф ===
+G1 = create_graph(edges)
+flow1, cut1, reach1, nreach1, flow_dict1 = compute_flow_and_cut(G1)
+print("🔹 Результаты для ИСХОДНОГО графа:")
+print(f"Максимальный поток: {flow1}")
+print(f"Минимальный разрез: {cut1}")
+
+draw_graph(G1, "Исходный граф (заданные пропускные способности)")
+
+# === Часть 2: случайные пропускные способности от 100 до 1000 ===
+random_edges = [(u, v, random.randint(100, 1000)) for u, v, _ in edges]
+G2 = create_graph(random_edges)
+flow2, cut2, reach2, nreach2, flow_dict2 = compute_flow_and_cut(G2)
+print("\n🔹 Результаты для СЛУЧАЙНОГО графа:")
+print(f"Максимальный поток: {flow2}")
+print(f"Минимальный разрез: {cut2}")
+
+draw_graph(G2, "Граф со случайными пропускными способностями [100, 1000]")
