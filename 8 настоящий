@@ -6,12 +6,11 @@ import random
 edges = [
     ('S', '1', 5), ('S', '2', 7), ('S', '3', 3),
     ('1', '2', 3), ('1', '4', 4), ('3', '2', 6),
-    ('3', '6', 5), ('2', '7', 9),
-     ('4', '2', 2),
+    ('3', '6', 5), ('2', '7', 9), ('4', '2', 2),
     ('4', '5', 7), ('5', '2', 6), ('5', '7', 5),
     ('5', 'T', 7), ('5', '9', 5), ('9', 'T', 9),
     ('7', '8', 4), ('6', '7', 3), ('6', '8', 3),
-    ('8', 'T', 9),('6', '2', 9)
+    ('8', 'T', 9), ('6', '2', 9)
 ]
 
 def create_graph(edge_list):
@@ -19,6 +18,17 @@ def create_graph(edge_list):
     for u, v, capacity in edge_list:
         G.add_edge(u, v, capacity=capacity)
     return G
+
+def print_cut_edges(G, reachable, non_reachable):
+    """Выводит дуги, входящие в минимальный разрез."""
+    cut_edges = []
+    for u, v in G.edges():
+        if u in reachable and v in non_reachable:
+            cut_edges.append((u, v, G.edges[u, v]['capacity']))
+    print("Дуги минимального разреза:")
+    for u, v, cap in cut_edges:
+        print(f"{u} -> {v} (пропускная способность: {cap})")
+    return cut_edges
 
 def compute_flow_and_cut(G, source='S', sink='T'):
     flow_value, flow_dict = nx.maximum_flow(G, source, sink)
@@ -42,6 +52,9 @@ flow1, cut1, reach1, nreach1, flow_dict1 = compute_flow_and_cut(G1)
 print("🔹 Результаты для ИСХОДНОГО графа:")
 print(f"Максимальный поток: {flow1}")
 print(f"Минимальный разрез: {cut1}")
+print(f"Достижимые узлы из S: {reach1}")
+print(f"Недостижимые узлы из S: {nreach1}")
+cut_edges1 = print_cut_edges(G1, reach1, nreach1)
 
 draw_graph(G1, "Исходный граф (заданные пропускные способности)")
 
@@ -52,5 +65,8 @@ flow2, cut2, reach2, nreach2, flow_dict2 = compute_flow_and_cut(G2)
 print("\n🔹 Результаты для СЛУЧАЙНОГО графа:")
 print(f"Максимальный поток: {flow2}")
 print(f"Минимальный разрез: {cut2}")
+print(f"Достижимые узлы из S: {reach2}")
+print(f"Недостижимые узлы из S: {nreach2}")
+cut_edges2 = print_cut_edges(G2, reach2, nreach2)
 
 draw_graph(G2, "Граф со случайными пропускными способностями [100, 1000]")
