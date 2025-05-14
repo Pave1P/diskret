@@ -1,0 +1,149 @@
+import networkx as nx
+import matplotlib.pyplot as plt
+
+edges = [(3, 8), (3, 9), (4, 10), (4, 11), (4, 13), (4, 15),  # Удалили (4,6)
+         (5, 8), (5, 9), (5, 16), (6, 16), (7, 8), (7, 9), (8, 10),
+         (8, 11), (8, 12), (8, 17), (9, 10), (9, 12), (9, 13), (9, 14),
+         (9, 17), (12, 16), (13, 16)]
+
+G = nx.Graph()
+G.add_edges_from(edges)
+
+# Проверка на двудольность и разделение на доли
+try:
+    left, right = nx.bipartite.sets(G)
+    print("Граф двудольный.")
+except nx.NetworkXError:
+    print("Граф не является двудольным. Проведите предварительную обработку.")
+    exit()
+
+
+# Алгоритм Куна
+def max_matching_kuhn(G):
+    graph = {u: list(G.neighbors(u)) for u in left}
+    match = {v: None for v in right}
+
+    def dfs(u, visited):
+        for v in graph[u]:
+            if v not in visited:
+                visited.add(v)
+                if match[v] is None or dfs(match[v], visited):
+                    match[v] = u
+                    return True
+        return False
+
+    result = 0
+    for u in left:
+        if dfs(u, set()):
+            result += 1
+
+    return {v: u for v, u in match.items() if u is not None}, result
+
+
+# Форд-Фалкерсон
+def max_matching_ford_fulkerson(G):
+    B = nx.DiGraph()
+    B.add_node('S')
+    B.add_node('T')
+
+    for u in left:
+        B.add_edge('S', u, capacity=1)
+        for v in G.neighbors(u):
+            if v in right:
+                B.add_edge(u, v, capacity=1)
+
+    for v in right:
+        B.add_edge(v, 'T', capacity=1)
+
+    try:
+        flow_value, flow_dict = nx.maximum_flow(B, 'S', 'T')
+        # Преобразуем flow_dict в паросочетание
+        matching = {}
+        for u in flow_dict:
+            if u == 'S' or u == 'T':
+                continue
+            for v in flow_dict[u]:
+                if flow_dict[u][v] == 1 and v != 'T':
+                    matching[v] = u
+        return matching, flow_value
+    except nx.NetworkXError as e:
+        print(f"Ошибка в Форд-Фалкерсоне: {e}")
+        return {}, 0
+
+
+# Визуализация
+def draw_matching(G, matching, title):
+    pos = nx.bipartite_layout(G, left) if nx.is_bipartite(G) else nx.spring_layout(G)
+    plt.figure(figsize=(12, 8))
+
+    color_map = []
+    for node in G.nodes():
+        if node in left:
+            color_map.append('lightblue')
+        elif node in right:
+            color_map.append('lightgreen')
+        else:
+            color_map.append('yellow')
+
+    nx.draw_networkx_nodes(G, pos, node_color=color_map, node_size=500)
+    nx.draw_networkx_labels(G, pos)
+
+    normal_edges = [edge for edge in G.edges()
+                    if not ((edge[0] in matching and matching[edge[0]] == edge[1]) or
+                            (edge[1] in matching and matching[edge[1]] == edge[0]))]
+    matching_edges = [edge for edge in G.edges()
+                      if (edge[0] in matching and matching[edge[0]] == edge[1]) or
+                      (edge[1] in matching and matching[edge[1]] == edge[0])]
+
+    nx.draw_networkx_edges(G, pos, edgelist=normal_edges, edge_color='gray', alpha=0.7)
+    nx.draw_networkx_edges(G, pos, edgelist=matching_edges, edge_color='red', width=2)
+
+    plt.title(title)
+    plt.axis('off')
+    plt.tight_layout()
+    plt.show()
+
+
+# Выполнение
+match_kuhn, count_kuhn = max_matching_kuhn(G)
+match_ff, count_ff = max_matching_ford_fulkerson(G)
+
+print("\nРезультаты:")
+print(f"Кун: {count_kuhn} паросочетаний, пример: {match_kuhn}")
+print(f"Форд-Фалкерсон: {count_ff} паросочетаний, пример: {match_ff}")
+
+# Визуализация
+draw_matching(G, match_kuhn, "Максимальное паросочетание (Кун)")
+draw_matching(G, match_ff, "Максимальное паросочетание (Форд-Фалкерсон)")
+
+# 1. Какой граф называется двудольным?
+# Ответ:
+# Граф называется двудольным, если его вершины можно разбить на два непересекающихся множества (доли) так, что каждое ребро соединяет вершины из разных долей.
+# Пример:
+# Левая доля: {1, 2, 3}
+# Правая доля: {A, B, C}
+# Рёбра: (1,A), (2,B), (3,C) — граф двудольный.
+# Проверка:
+# Если граф содержит циклы нечётной длины, он не двудольный.
+
+# 2. Дайте определение паросочетания.
+# Ответ:Паросочетание — это подмножество рёбер графа, в котором:
+# Никакие два ребра не имеют общей вершины (несмежные).
+# Каждая вершина принадлежит не более чем одному ребру паросочетания.
+# Пример:
+# В графе с рёбрами (1,A), (2,B), (3,C):
+# Паросочетание размера 3: {(1,A), (2,B), (3,C)}
+# Паросочетание размера 2: {(1,A), (2,B)}
+#3
+# Алгоритм Куна (для двудольных графов)
+# Плюсы:Простота реализации. Высокая скорость на двудольных графах.Не требует дополнительных структур данных.
+# Минусы:Работает только для двудольных графов.Эффективность падает на плотных графах.
+
+# Алгоритм Форда-Фалкерсона
+# Плюсы:Универсальность (решает задачу через потоки).Может учитывать веса рёбер.Позволяет решать смежные задачи (минимальные разрезы).
+# Минусы:Требует построения вспомогательной сети.Скорость зависит от величины максимального потока.Избыточен для простых задач о паросочетаниях.
+
+# Алгоритм Эдмондса (для произвольных графов)
+# Плюсы:Решает задачу для любых графов.Находит наибольшее паросочетание.
+#Минусы:Сложная реализация.Высокая вычислительная сложность.
+
